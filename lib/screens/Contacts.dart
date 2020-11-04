@@ -1,3 +1,4 @@
+import 'package:contacts_app/utils.dart';
 import 'package:contacts_service/contacts_service.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -16,42 +17,6 @@ class _ContactsPageState extends State<ContactsPage> {
   List<Contact> contactsFiltered = [];
   Map<String, Color> contactsColorMap = new Map();
   TextEditingController searchController = new TextEditingController();
-
-  String flattenPhoneNumber(String phoneStr) {
-    return phoneStr.replaceAllMapped(RegExp(r'^(\+)|\D'), (Match m) {
-      return m[0] == "+" ? "+" : "";
-    });
-  }
-
-  filterContacts() {
-    List<Contact> _contacts = [];
-    _contacts.addAll(contacts);
-    if (searchController.text.isNotEmpty) {
-      _contacts.retainWhere((contact) {
-        String searchTerm = searchController.text.toLowerCase();
-        String searchTermFlatten = flattenPhoneNumber(searchTerm);
-        String contactName = contact.displayName.toLowerCase();
-        bool nameMatches = contactName.contains(searchTerm);
-        if (nameMatches == true) {
-          return true;
-        }
-
-        if (searchTermFlatten.isEmpty) {
-          return false;
-        }
-
-        var phone = contact.phones.firstWhere((phn) {
-          String flattenedPhone = flattenPhoneNumber(phn.value);
-          return flattenedPhone.contains(searchTermFlatten);
-        }, orElse: () => null);
-
-        return phone != null;
-      });
-    }
-    setState(() {
-      contactsFiltered = _contacts;
-    });
-  }
 
   getAllContacts() async {
     List colors = [Colors.green, Colors.indigo, Colors.yellow, Colors.orange];
@@ -80,7 +45,9 @@ class _ContactsPageState extends State<ContactsPage> {
     if (await Permission.contacts.request().isGranted) {
       getAllContacts();
       searchController.addListener(() {
-        filterContacts();
+        setState(() {
+          contactsFiltered = filterContacts(contacts);
+        });
       });
     }
   }
@@ -120,34 +87,33 @@ class _ContactsPageState extends State<ContactsPage> {
                       : contacts[index];
 
                   var baseColor =
-                  contactsColorMap[contact.displayName] as dynamic;
+                      contactsColorMap[contact.displayName] as dynamic;
 
                   Color color1 = baseColor[800];
                   Color color2 = baseColor[400];
                   return ListTile(
                       title: Text(contact.displayName),
-                      subtitle: Text(contact.phones.length > 0
-                          ? contact.phones.elementAt(0).value
-                          : ''),
+                      subtitle: Container(
+                          child: Text(contact.phones.elementAt(0).value + "\n" + contact.emails.elementAt(0).value)),
                       leading: (contact.avatar != null &&
-                          contact.avatar.length > 0)
+                              contact.avatar.length > 0)
                           ? CircleAvatar(
-                        backgroundImage: MemoryImage(contact.avatar),
-                      )
+                              backgroundImage: MemoryImage(contact.avatar),
+                            )
                           : Container(
-                          decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: LinearGradient(
-                                  colors: [
-                                    color1,
-                                    color2,
-                                  ],
-                                  begin: Alignment.bottomLeft,
-                                  end: Alignment.topRight)),
-                          child: CircleAvatar(
-                              child: Text(contact.initials(),
-                                  style: TextStyle(color: Colors.white)),
-                              backgroundColor: Colors.transparent)));
+                              decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                      colors: [
+                                        color1,
+                                        color2,
+                                      ],
+                                      begin: Alignment.bottomLeft,
+                                      end: Alignment.topRight)),
+                              child: CircleAvatar(
+                                  child: Text(contact.initials(),
+                                      style: TextStyle(color: Colors.white)),
+                                  backgroundColor: Colors.transparent)));
                 },
               ),
             )
