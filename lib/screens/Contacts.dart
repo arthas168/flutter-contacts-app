@@ -18,6 +18,21 @@ class _ContactsPageState extends State<ContactsPage> {
   Map<String, Color> contactsColorMap = new Map();
   TextEditingController searchController = new TextEditingController();
 
+  filterContacts() {
+    List<Contact> _contacts = [];
+    _contacts.addAll(contacts);
+    if (searchController.text.isNotEmpty) {
+      _contacts.retainWhere((contact) {
+        String searchTerm = searchController.text.toLowerCase();
+
+        return retainContact(searchTerm, contact);
+      });
+    }
+    setState(() {
+      contactsFiltered = _contacts;
+    });
+  }
+
   getAllContacts() async {
     List colors = [Colors.green, Colors.indigo, Colors.yellow, Colors.orange];
     int colorIndex = 0;
@@ -45,9 +60,7 @@ class _ContactsPageState extends State<ContactsPage> {
     if (await Permission.contacts.request().isGranted) {
       getAllContacts();
       searchController.addListener(() {
-        setState(() {
-          contactsFiltered = filterContacts(contacts);
-        });
+        filterContacts();
       });
     }
   }
@@ -94,7 +107,9 @@ class _ContactsPageState extends State<ContactsPage> {
                   return ListTile(
                       title: Text(contact.displayName),
                       subtitle: Container(
-                          child: Text(contact.phones.elementAt(0).value + "\n" + contact.emails.elementAt(0).value)),
+                          child: Text(contact.phones.elementAt(0).value +
+                              "\n" +
+                              contact.emails.elementAt(0).value)),
                       leading: (contact.avatar != null &&
                               contact.avatar.length > 0)
                           ? CircleAvatar(
